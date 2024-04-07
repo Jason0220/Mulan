@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 if (( $# < 5 )) ; then
@@ -57,7 +56,7 @@ function download_nxp_code() {
 		do
 			echo -e "\ngit clone Mulan-NXP595 start: $i" | tee -a $LOG_FILE
 			echo "git clone -b $BRANCH ssh://$USER_NAME@10.10.192.13:29418/Mulan-NXP595" | tee -a $LOG_FILE
-			git clone -b $BRANCH ssh://$USER_NAME@10.10.192.13:29418/Mulan-NXP595 2>&1 | tee -a $LOG_FILE
+			git clone -b $BRANCH ssh://$USER_NAME@10.10.192.13:29418/Mulan-NXP595 >> $LOG_FILE 2>&1
 			result=${PIPESTATUS[0]}
 
 			echo "git clone Mulan-NXP595 finish: $result" | tee -a $LOG_FILE
@@ -73,17 +72,17 @@ function download_nxp_code() {
 		cd Mulan-NXP595
 		echo "cd $(pwd)" | tee -a $LOG_FILE
 		echo "git reset --hard" | tee -a $LOG_FILE
-		git reset --hard 2>&1 | tee -a $LOG_FILE
-  		echo "git checkout $BRANCH" | tee -a $LOG_FILE
-		git checkout $BRANCH 2>&1 | tee -a $LOG_FILE
-		echo "git reset --hard $LAST_VERSION" | tee -a $LOG_FILE
-		git reset --hard $LAST_VERSION 2>&1 | tee -a $LOG_FILE    # git reset to LAST_VERSION & git clean;
+		git reset --hard >> $LOG_FILE 2>&1
+		git checkout $BRANCH >> $LOG_FILE 2>&1
+		echo "git checkout $BRANCH ${PIPESTATUS[0]}" | tee -a $LOG_FILE
+		git reset --hard $LAST_VERSION >> $LOG_FILE 2>&1    # git reset to LAST_VERSION & git clean;
+	        echo "git reset --hard $LAST_VERSION ${PIPESTATUS[0]}" | tee -a $LOG_FILE
 	        echo "git clean -fxd" | tee -a $LOG_FILE
-	        git clean -fxd 2>&1 | tee -a $LOG_FILE
+	        git clean -fxd >> $LOG_FILE 2>&1
 		for((i=1;i<=50;i++));
 		do
 			echo -e "\ngit pull start: $i" | tee -a $LOG_FILE
-			git pull 2>&1 | tee -a $LOG_FILE
+			git pull >> $LOG_FILE 2>&1
 			result=${PIPESTATUS[0]}
 
 			echo "git pull finish: $result" | tee -a $LOG_FILE
@@ -103,13 +102,13 @@ function download_nxp_code() {
 function build_nxp595() {
 	cd $TARGET_PATH
 	echo -e "\ncd $(pwd)" | tee -a $LOG_FILE
-	sed -i "s/V0\.1\.0/$NEW_VERSION/" version.h 2>&1 | tee -a $LOG_FILE
+	sed -i "s/V0\.1\.0/$NEW_VERSION/" version.h >> $LOG_FILE 2>&1
 	echo "Modified GTK_FW_VERSION to $NEW_Version in version.h result ${PIPESTATUS[0]}" | tee -a $LOG_FILE
 	sed -i "s@../../tools/gcc/bin@$GCC_ARM@" rtconfig.py
 	echo "Modified GCC_ARM tool to $GCC_ARM in rtconfig.py result ${PIPESTATUS[0]}" | tee -a $LOG_FILE
 	
 	echo -e "\nscons -j64" | tee -a $LOG_FILE
-	scons -j64 2>&1 | tee -a $LOG_FILE
+	scons -j64 >> $LOG_FILE 2>&1
 	result=${PIPESTATUS[0]}
 	if [ $result -ne 0 ]; then
 		echo "scons -j64 failed: "$result | tee -a $LOG_FILE
