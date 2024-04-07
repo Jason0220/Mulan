@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 if (( $# < 5 )) ; then
@@ -40,13 +41,10 @@ echo "LAST_VERSION: $LAST_VERSION" | tee -a $LOG_FILE
 echo "LOG_FILE: $LOG_FILE" | tee -a $LOG_FILE
 
 TARGET_PATH="$CODE_DIR/Mulan-NXP595/target/mulan"
-echo "NXP595_PATH: $NXP595_PATH" | tee -a $LOG_FILE
 echo "TARGET_PATH: $TARGET_PATH" | tee -a $LOG_FILE
 
 USER_NAME=$(git config --get user.name)
-USER_EMAIL=$(git config --get user.email)
 echo "USER_NAME: $USER_NAME" | tee -a $LOG_FILE
-echo "USER_EMAIL: $USER_EMAIL" | tee -a $LOG_FILE
 
 function download_nxp_code() {
 	# git pull or git clone the latest nxp595 code
@@ -74,12 +72,14 @@ function download_nxp_code() {
 	else
 		cd Mulan-NXP595
 		echo "cd $(pwd)" | tee -a $LOG_FILE
+		echo "git reset --hard" | tee -a $LOG_FILE
+		git reset --hard 2>&1 | tee -a $LOG_FILE
 		git checkout $BRANCH 2>&1 | tee -a $LOG_FILE
 		echo "git checkout $BRANCH" | tee -a $LOG_FILE
+		echo "git reset --hard $LAST_VERSION" | tee -a $LOG_FILE
 		git reset --hard $LAST_VERSION 2>&1 | tee -a $LOG_FILE    # git reset to LAST_VERSION & git clean;
-	        echo "git reset --hard $LAST_VERSION" | tee -a $LOG_FILE
-	        git clean -fxd 2>&1 | tee -a $LOG_FILE
 	        echo "git clean -fxd" | tee -a $LOG_FILE
+	        git clean -fxd 2>&1 | tee -a $LOG_FILE
 		for((i=1;i<=50;i++));
 		do
 			echo -e "\ngit pull start: $i" | tee -a $LOG_FILE
