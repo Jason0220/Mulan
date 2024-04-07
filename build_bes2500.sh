@@ -75,12 +75,14 @@ function download_bes_code() {
 	else
 		cd Mulan-BES2500L
 		echo "cd $(pwd)" | tee -a $LOG_FILE
+		echo "git reset --hard" | tee -a $LOG_FILE
+		git reset --hard 2>&1 | tee -a $LOG_FILE
 		git checkout $BRANCH 2>&1 | tee -a $LOG_FILE
 		echo "git checkout $BRANCH" | tee -a $LOG_FILE
+		echo "git reset --hard $LAST_VERSION" | tee -a $LOG_FILE
 		git reset --hard $LAST_VERSION 2>&1 | tee -a $LOG_FILE    # git reset to LAST_VERSION & git clean;
-	        echo "git reset --hard $LAST_VERSION" | tee -a $LOG_FILE
-	        git clean -fxd 2>&1 | tee -a $LOG_FILE
 	        echo "git clean -fxd" | tee -a $LOG_FILE
+	        git clean -fxd 2>&1 | tee -a $LOG_FILE
 		for((i=1;i<=50;i++));
 		do
 			echo -e "\ngit pull start: $i" | tee -a $LOG_FILE
