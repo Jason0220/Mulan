@@ -34,9 +34,11 @@ cd $CODE_DIR
 CODE_DIR=$(pwd)
 LOG_FILE="$CODE_DIR/Mulan-BES2500L_build_$TIME_NOW.log"
 echo "Mulan-BES2500 build start at $TIME_NOW" | tee $LOG_FILE
+echo "BRANCH: $BRANCH" | tee -a $LOG_FILE
 echo "CODE_DIR: $CODE_DIR" | tee -a $LOG_FILE
 echo "NEW_VERSION: $NEW_VERSION" | tee -a $LOG_FILE
 echo "LAST_VERSION: $LAST_VERSION" | tee -a $LOG_FILE
+echo "GCC_ARM: $GCC_ARM" | tee -a $LOG_FILE
 echo "LOG_FILE: $LOG_FILE" | tee -a $LOG_FILE
 
 OUT_PATH="$CODE_DIR/Mulan-BES2500L/out"
@@ -45,9 +47,7 @@ echo "OUT_PATH: $OUT_PATH" | tee -a $LOG_FILE
 echo "TOOLS_PATH: $TOOLS_PATH" | tee -a $LOG_FILE
 
 USER_NAME=$(git config --get user.name)
-USER_EMAIL=$(git config --get user.email)
 echo "USER_NAME: $USER_NAME" | tee -a $LOG_FILE
-echo "USER_EMAIL: $USER_EMAIL" | tee -a $LOG_FILE
 
 function download_bes_code() {
 	# git pull or git clone the latest bes2500 code
@@ -78,7 +78,7 @@ function download_bes_code() {
 		echo "git reset --hard" | tee -a $LOG_FILE
 		git reset --hard 2>&1 | tee -a $LOG_FILE
 		echo "git checkout $BRANCH" | tee -a $LOG_FILE
-  		git checkout $BRANCH 2>&1 | tee -a $LOG_FILE
+		git checkout $BRANCH 2>&1 | tee -a $LOG_FILE
 		echo "git reset --hard $LAST_VERSION" | tee -a $LOG_FILE
 		git reset --hard $LAST_VERSION 2>&1 | tee -a $LOG_FILE    # git reset to LAST_VERSION & git clean;
 	        echo "git clean -fxd" | tee -a $LOG_FILE
@@ -106,12 +106,13 @@ function download_bes_code() {
 function build_bes2500() {
 	cd $CODE_DIR/Mulan-BES2500L
 	echo -e "\ncd $(pwd)" | tee -a $LOG_FILE
-	sed -i "s@arm-none-eabi-@$GCC_ARM/arm-none-eabi-@" Makefile 2>&1 | tee -a $LOG_FILE
 	echo "Modified CONFIG_CROSS_COMPILE to $GCC_ARM/arm-none-eabi- in Makefile result ${PIPESTATUS[0]}" | tee -a $LOG_FILE
+	sed -i "s@arm-none-eabi-@$GCC_ARM/arm-none-eabi-@" Makefile 2>&1 | tee -a $LOG_FILE
 	sed -i "s/\\\$key\\\$/\\\$key/" tools/fill_sec_base.pl
-	echo "Modified $key$ to $key in tools/fill_sec_base.pl result ${PIPESTATUS[0]}" | tee -a $LOG_FILE
-	export PATH=$GCC_ARM:$PATH 2>&1 | tee -a $LOG_FILE
+	echo 'Modified $key$ to $key in tools/fill_sec_base.pl result ${PIPESTATUS[0]}' | tee -a $LOG_FILE
 	echo "Export $GCC_ARM as environmental variable result ${PIPESTATUS[0]}" | tee -a $LOG_FILE
+	export PATH=$GCC_ARM:$PATH >> $LOG_FILE 2>&1
+	echo $PATH
 	
 	echo -e "\nmake T=best2500p_ibrt SOFTWARE_VERSION=$NEW_VERSION -j FORCE_TO_USE_LIB=1" | tee -a $LOG_FILE
 	make T=best2500p_ibrt SOFTWARE_VERSION=$NEW_VERSION -j FORCE_TO_USE_LIB=1 2>&1 | tee -a $LOG_FILE
