@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if (( $# < 5 )) ; then
+if (( $# < 6 )) ; then
 	echo "params error"
 	echo "Usage: $0 BRANCH CODE_DIR NEW_VERSION LAST_VERSION GCC_ARM"
 	echo "BRANCH: The branch of repository "Mulan-NXP595" you would like to build"
@@ -8,6 +8,7 @@ if (( $# < 5 )) ; then
 	echo "NEW_VERSION: The expected version number"
 	echo "LAST_VERSION: To remove any redundant patches, the LAST_VERSION must be real"
 	echo "GCC_ARM: The path of gcc arm tool in your local environment"
+	echo "COLOR: RGB light engine or G only light engine"
 	logger "params error"
 	logger "Usage: $0 CODE_DIR NEW_VERSION LAST_VERSION"
 	logger "BRANCH: The branch of repository "Mulan-NXP595" you would like to build"
@@ -15,6 +16,7 @@ if (( $# < 5 )) ; then
 	logger "NEW_VERSION: The expected version number"
 	logger "LAST_VERSION: To remove any redundant patches, the LAST_VERSION must be real"
 	logger "GCC_ARM: The path of gcc arm tool in your local environment"
+	logger "COLOR: RGB light engine or G only light engine"
 	exit 1
 fi
 
@@ -29,6 +31,7 @@ TIME_NOW=`date +%Y%m%d%H%M`
 NEW_VERSION=$3
 LAST_VERSION=$4
 GCC_ARM=$5
+COLOR=$6
 
 cd $CODE_DIR
 CODE_DIR=$(pwd)
@@ -71,14 +74,12 @@ function download_nxp_code() {
 	else
 		cd Mulan-NXP595
 		echo "cd $(pwd)" | tee -a $LOG_FILE
-		echo "git reset --hard" | tee -a $LOG_FILE
-		git reset --hard >> $LOG_FILE 2>&1
 		git checkout $BRANCH >> $LOG_FILE 2>&1
 		echo "git checkout $BRANCH ${PIPESTATUS[0]}" | tee -a $LOG_FILE
 		git reset --hard $LAST_VERSION >> $LOG_FILE 2>&1    # git reset to LAST_VERSION & git clean;
-	        echo "git reset --hard $LAST_VERSION ${PIPESTATUS[0]}" | tee -a $LOG_FILE
-	        echo "git clean -fxd" | tee -a $LOG_FILE
-	        git clean -fxd >> $LOG_FILE 2>&1
+	    echo "git reset --hard $LAST_VERSION ${PIPESTATUS[0]}" | tee -a $LOG_FILE
+	    echo "git clean -fxd" | tee -a $LOG_FILE
+	    git clean -fxd 2>&1 | tee -a $LOG_FILE
 		for((i=1;i<=50;i++));
 		do
 			echo -e "\ngit pull start: $i" | tee -a $LOG_FILE
@@ -107,8 +108,17 @@ function build_nxp595() {
 	sed -i "s@../../tools/gcc/bin@$GCC_ARM@" rtconfig.py
 	echo "Modified GCC_ARM tool to $GCC_ARM in rtconfig.py result ${PIPESTATUS[0]}" | tee -a $LOG_FILE
 	
+	# 判断用户输入的值是否为RGB，若为RGB，则去掉注释；否则保留注释
+	if [ "$COLOR" == "RGB" ]; then
+		# 打开文件，并在其中删除USING_RGB_LE行前面的注释符号
+		sed -i 's|// #define USING_RGB_LE|#define USING_RGB_LE|' "rtconfig.h"
+		echo "已打开rtconfig.h 中的USING_RGB_LE宏定义" 2>&1 | tee -a $LOG_FILE
+	else
+		echo "Keep using GREEN light engine" 2>&1 | tee -a $LOG_FILE
+	fi
+
 	echo -e "\nscons -j64" | tee -a $LOG_FILE
-	scons -j64 >> $LOG_FILE 2>&1
+	scons -j64 2>&1 | tee -a $LOG_FILE
 	result=${PIPESTATUS[0]}
 	if [ $result -ne 0 ]; then
 		echo "scons -j64 failed: "$result | tee -a $LOG_FILE
